@@ -24,7 +24,7 @@ from Cryptodome.Signature import PKCS1_v1_5
 from bismuth.core.utils import quantize_two, quantize_eight, quantize_ten
 from bismuth.core.ann import ann_get, ann_ver_get
 from bismuth.core.essentials import fee_calculate
-from bismuth.core import mempool as mp, plugins, staking, mining, mining_heavy3, regnet, aliases, tokensv2 as tokens, log, options, connections, peershandler, apihandler as apihandler_module, keys, essentials
+from bismuth.core import mempool as mp, plugins, staking, mining_heavy3, regnet, aliases, tokensv2 as tokens, log, options, connections, peershandler, apihandler as apihandler_module, keys, essentials
 
 # load config
 # global ban_threshold
@@ -93,7 +93,6 @@ terminal_output = config.terminal_output
 egress = config.egress
 genesis_conf = config.genesis_conf
 
-from bismuth.core.appdirs import *
 appname = "Bismuth"
 appauthor = "Bismuth Foundation"
 

@@ -400,9 +400,8 @@ def db_c_define():
         conn.execute("PRAGMA page_size = 4096;")
         conn.text_factory = str
         c = conn.cursor()
-
-    except Exception as e:
-        app_log.info(e)
+    except Exception:
+        app_log.info("Failed db cursor init", exc_info=True)
 
     return conn, c
 
@@ -1408,6 +1407,7 @@ def coherence_check():
 
     app_log.warning("Status: Testing chain coherence, starting with block {}".format(coherence_last))
 
+    # Check only the ledgers we're currently recording
     if full_ledger:
         chains_to_check = [ledger_path_conf, hyper_path_conf]
     else:
@@ -3164,7 +3164,7 @@ if __name__ == "__main__":
 
                 server_thread.daemon = True
                 server_thread.start()
-                app_log.warning("Status: Server loop running.")
+                app_log.warning("Status: Server loop running on {}:{}".format(HOST, PORT))
             else:
                 app_log.warning("Status: Not starting a local server to conceal identity on Tor network")
 

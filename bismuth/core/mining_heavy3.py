@@ -15,7 +15,6 @@ import hmac
 from hashlib import sha224
 
 from bismuth.core.quantizer import quantize_ten
-from bismuth.core.hmac_drbg import DRBG
 from bismuth.core import regnet
 
 __version__ = '0.1.3'
@@ -35,6 +34,34 @@ F = None
 
 is_regnet = False
 
+
+
+
+class DRBG(object):
+    """ From https://github.com/davidlazar/python-drbg """
+    def __init__(self, seed):
+        self.key = b'\x00' * 64
+        self.val = b'\x01' * 64
+        self.reseed(seed)
+
+    def hmac(self, key, val):
+        return hmac.new(key, val, hashlib.sha512).digest()
+
+    def reseed(self, data=b''):
+        self.key = self.hmac(self.key, self.val + b'\x00' + data)
+        self.val = self.hmac(self.key, self.val)
+        if data:
+            self.key = self.hmac(self.key, self.val + b'\x01' + data)
+            self.val = self.hmac(self.key, self.val)
+
+    def generate(self, n):
+        xs = b''
+        while len(xs) < n:
+            self.val = self.hmac(self.key, self.val)
+            xs += self.val
+
+        self.reseed()
+        return xs[:n]
 
 
 def read_int_from_map(map, index):

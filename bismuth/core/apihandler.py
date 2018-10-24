@@ -9,7 +9,7 @@ import sqlite3
 import base64
 # modular handlers will need access to the database methods under some form, so it needs to be modular too.
 # Here, I just duplicated the minimum needed code from node, further refactoring with classes will follow.
-from bismuth.core import dbhandler, peershandler, mempool as mp
+from bismuth.core import dbhandler, mempool as mp
 from bismuth.core.utils import send, receive
 import threading
 import os, sys

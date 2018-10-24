@@ -13,6 +13,7 @@ import sys
 import hashlib
 import hmac
 from hashlib import sha224
+from decimal import Decimal
 
 from bismuth.core.utils import quantize_ten
 from bismuth.core import regnet

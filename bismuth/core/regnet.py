@@ -14,7 +14,8 @@ from Cryptodome.Signature import PKCS1_v1_5
 from hashlib import sha224
 from random import getrandbits
 
-from bismuth.core import connections, mempool as mp, mining_heavy3 as mining
+from bismuth.core.utils import send, receive
+from bismuth.core import mempool as mp, mining_heavy3 as mining
 
 # fixed diff for regnet
 REGNET_DIFF = 24
@@ -141,12 +142,12 @@ def command(sdef, data, blockhash):
     try:
         APP_LOG.warning("Regnet got command {}".format(data))
         if data == 'regtest_generate':
-            how_many = int(connections.receive(sdef))
+            how_many = int(receive(sdef))
             APP_LOG.warning("regtest_generate {} {}".format(how_many, blockhash))
             mempool_txs = mp.MEMPOOL.fetchall(mp.SQL_SELECT_TX_TO_SEND)
             for i in range(how_many):
                 blockhash = generate_one_block(blockhash, mempool_txs)
-            connections.send(sdef, 'OK')
+            send(sdef, 'OK')
     except Exception as e:
         APP_LOG.warning(e)
         exc_type, exc_obj, exc_tb = sys.exc_info()

@@ -86,7 +86,9 @@ class Get:
             if key not in self.__dict__:
                 setattr(self, key, default)
 
-        #print(self.__dict__)
+        # A patch for replacing the global config `version`
+        self.version = self.version_conf
+        self.full_ledger = self.full_ledger_conf
 
     def read(self):
         # first of all, load from default config so we have all needed params

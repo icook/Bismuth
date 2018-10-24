@@ -1,6 +1,6 @@
 import sqlite3
 import re
-import log
+from bismuth.core import log
 
 def replace_regex(string,replace):
     replaced_string = re.sub(r'^{}'.format(replace), "", string)

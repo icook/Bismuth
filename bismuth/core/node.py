@@ -13,27 +13,18 @@
 
 VERSION = "4.2.8"  # 3. regnet support
 
-# Bis specific modules
-import log, options, connections, peershandler, apihandler
+import shutil, socketserver, base64, hashlib, os, re, sqlite3, sys, threading, time, socks, random, math, requests, tarfile, glob
 
-import shutil, socketserver, base64, hashlib, os, re, sqlite3, sys, threading, time, socks, random, keys, math, requests, tarfile, essentials, glob
+from decimal import *
 from hashlib import blake2b
-import tokensv2 as tokens
-import aliases
-from quantizer import *
-from ann import ann_get, ann_ver_get
-from essentials import fee_calculate
-
 from Cryptodome.Hash import SHA
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Signature import PKCS1_v1_5
 
-import mempool as mp
-import plugins
-import staking
-import mining
-import mining_heavy3
-import regnet
+from bismuth.core.utils import quantize_two, quantize_eight, quantize_ten
+from bismuth.core.ann import ann_get, ann_ver_get
+from bismuth.core.essentials import fee_calculate
+from bismuth.core import mempool as mp, plugins, staking, mining, mining_heavy3, regnet, aliases, tokensv2 as tokens, log, options, connections, peershandler, apihandler as apihandler_module, keys, essentials
 
 # load config
 # global ban_threshold
@@ -65,6 +56,8 @@ db_lock = threading.Lock()
 
 config = options.Get()
 config.read()
+
+
 debug_level = config.debug_level_conf
 port = config.port
 verify_conf = config.verify_conf
@@ -100,7 +93,7 @@ terminal_output = config.terminal_output
 egress = config.egress
 genesis_conf = config.genesis_conf
 
-from appdirs import *
+from bismuth.core.appdirs import *
 appname = "Bismuth"
 appauthor = "Bismuth Foundation"
 
@@ -112,10 +105,11 @@ appauthor = "Bismuth Foundation"
 # global whitelist
 # whitelist=config.whitelist
 
-global peers
-
 PEM_BEGIN = re.compile(r"\s*-----BEGIN (.*)-----\s+")
 PEM_END = re.compile(r"-----END (.*)-----\s*$")
+
+
+global peers, app_log, plugin_manager, apihandler, syncing
 
 
 def limit_version():
@@ -400,8 +394,9 @@ def db_c_define():
         conn.execute("PRAGMA page_size = 4096;")
         conn.text_factory = str
         c = conn.cursor()
-    except Exception:
-        app_log.info("Failed db cursor init", exc_info=True)
+
+    except Exception as e:
+        app_log.info(e)
 
     return conn, c
 
@@ -1009,6 +1004,7 @@ def digest_block(data, sdef, peer_ip, conn, c, hdd, h, hdd2, h2, h3, index, inde
     global last_block
     global peers
     global plugin_manager
+    global app_log
     block_height_new = last_block + 1  # for logging purposes.
     block_hash = 'N/A'
     failed_cause = ''
@@ -1321,7 +1317,7 @@ def digest_block(data, sdef, peer_ip, conn, c, hdd, h, hdd2, h2, h3, index, inde
 
                 # savings
                 if is_testnet or block_height_new >= 843000:
-                    # no savings for regnet
+                    # no savings for regnet
                     if int(block_height_new) % 10000 == 0:  # every x blocks
                         staking.staking_update(conn, c, index, index_cursor, "normal", block_height_new, app_log)
                         staking.staking_payout(conn, c, index, index_cursor, block_height_new, float(q_block_timestamp), app_log)
@@ -1368,13 +1364,13 @@ def digest_block(data, sdef, peer_ip, conn, c, hdd, h, hdd2, h2, h3, index, inde
                 return block_hash
 
         except Exception as e:
-            app_log.warning("Block: processing failed: {}".format(e))
+            app_log.warning("Block: processing failed", exc_info=True)
             failed_cause = str(e)
             # Temp
 
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
+            # exc_type, exc_obj, exc_tb = sys.exc_info()
+            # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            # print(exc_type, fname, exc_tb.tb_lineno)
 
             if peers.warning(sdef, peer_ip, "Rejected block", 2):
                 raise ValueError("{} banned".format(peer_ip))
@@ -3024,7 +3020,7 @@ def initial_db_check():
     Initial bootstrap check and chain validity control
     """
     global last_block, hdd_block
-    global tr, conn, c, hdd, h, h3, hdd2, h2
+    global tr, conn, c, hdd, h, h3, hdd2, h2, plugin_manager
     # force bootstrap via adding an empty "fresh_sync" file in the dir.
     if os.path.exists("fresh_sync") and is_mainnet:
         app_log.warning("Status: Fresh sync required, bootstrapping from the website")
@@ -3096,7 +3092,7 @@ def initial_db_check():
 
 def load_keys():
     """Initial loading of crypto keys"""
-    global public_key_readable, public_key_hashed, address, keyfile
+    global public_key_readable, public_key_hashed, address, keyfile, db_lock, is_testnet, port, verify_conf
     essentials.keys_check(app_log, "wallet.der")
     essentials.db_check(app_log)
     key, public_key_readable, private_key_readable, _, _, public_key_hashed, address, keyfile = \
@@ -3109,8 +3105,8 @@ def load_keys():
 
     app_log.warning("Status: Local address: {}".format(address))
 
-
-if __name__ == "__main__":
+def main():
+    global app_log, plugin_manager, apihandler, port, peers, syncing
     app_log = log.log("node.log", debug_level_conf, terminal_output)
     app_log.warning("Configuration settings loaded")
     mining_heavy3.mining_open()
@@ -3133,7 +3129,7 @@ if __name__ == "__main__":
             # print(peers.peer_list_old_format())
             # sys.exit()
 
-            apihandler = apihandler.ApiHandler(app_log, config)
+            apihandler = apihandler_module.ApiHandler(app_log, config)
             mp.MEMPOOL = mp.Mempool(app_log, config, db_lock, is_testnet)
 
             if rebuild_db_conf:
@@ -3190,3 +3186,7 @@ if __name__ == "__main__":
             raise
     finally:
         mining_heavy3.mining_close()
+
+
+if __name__ == "__main__":
+    main()

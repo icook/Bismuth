@@ -5,9 +5,8 @@
 #operation: staking:register
 
 import sqlite3
-import log
-from quantizer import *
-import mempool as mp
+from bismuth.core.quantizer import quantize_two, quantize_eight, quantize_ten
+from bismuth.core import mempool as mp, log
 from hashlib import blake2b
 import re
 

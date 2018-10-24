@@ -14,9 +14,7 @@ from Cryptodome.Signature import PKCS1_v1_5
 from hashlib import sha224
 from random import getrandbits
 
-import connections
-import mempool as mp
-import mining_heavy3 as mining
+from bismuth.core import connections, mempool as mp, mining_heavy3 as mining
 
 # fixed diff for regnet
 REGNET_DIFF = 24

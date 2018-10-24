@@ -1,7 +1,7 @@
 """
 Common helpers for Bismuth
 """
-import os, db, sqlite3, hashlib, base64
+import os, sqlite3, hashlib, base64
 
 # from Crypto import Random
 from Cryptodome.PublicKey import RSA
@@ -11,7 +11,8 @@ import time
 import json
 from simplecrypt import *
 
-from quantizer import *
+from bismuth.core import essentials, db
+from bismuth.core.quantizer import *
 
 __version__ = "0.0.3"
 

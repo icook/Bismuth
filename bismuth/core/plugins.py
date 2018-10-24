@@ -168,3 +168,4 @@ class PluginManager:
 if __name__ == "__main__":
     print("This is Bismuth core plugin module.")
     print("See https://github.com/bismuthfoundation/BismuthPlugins for compatible plugins and doc.")
+1

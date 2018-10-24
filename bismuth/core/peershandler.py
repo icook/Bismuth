@@ -12,7 +12,7 @@ import time
 
 import socks
 
-import regnet
+from bismuth.core import regnet
 
 __version__ = "0.0.10"
 

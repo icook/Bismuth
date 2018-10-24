@@ -9,11 +9,10 @@ import sqlite3
 import base64
 # modular handlers will need access to the database methods under some form, so it needs to be modular too.
 # Here, I just duplicated the minimum needed code from node, further refactoring with classes will follow.
-import dbhandler, connections, peershandler
+from bismuth.core import dbhandler, connections, peershandler, mempool as mp
 import threading
 import os, sys
 #import math
-import mempool as mp
 
 __version__ = "0.0.5"
 
@@ -512,5 +511,3 @@ class ApiHandler:
             connections.send(socket_handler, info)
         except Exception as e:
             pass
-
-

@@ -3,7 +3,8 @@ Modularize the mining algo check
 """
 
 import hashlib
-from quantizer import *
+from decimal import Decimal
+from bismuth.core.quantizer import quantize_two, quantize_eight, quantize_ten
 
 
 __version__ = '0.0.1'

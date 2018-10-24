@@ -10,11 +10,13 @@ import mmap
 import os
 import struct
 import sys
+import hashlib
+import hmac
 from hashlib import sha224
-from hmac_drbg import DRBG
-from quantizer import *
 
-import regnet
+from bismuth.core.quantizer import quantize_ten
+from bismuth.core.hmac_drbg import DRBG
+from bismuth.core import regnet
 
 __version__ = '0.1.3'
 
@@ -32,6 +34,7 @@ MMAP = None
 F = None
 
 is_regnet = False
+
 
 
 def read_int_from_map(map, index):

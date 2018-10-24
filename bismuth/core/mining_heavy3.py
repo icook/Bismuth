@@ -14,7 +14,7 @@ import hashlib
 import hmac
 from hashlib import sha224
 
-from bismuth.core.quantizer import quantize_ten
+from bismuth.core.utils import quantize_ten
 from bismuth.core import regnet
 
 __version__ = '0.1.3'

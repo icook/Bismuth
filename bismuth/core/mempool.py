@@ -15,7 +15,7 @@ from Cryptodome.Hash import SHA
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Signature import PKCS1_v1_5
 
-from bismuth.core.quantizer import quantize_two, quantize_eight, quantize_ten
+from bismuth.core.utils import quantize_two, quantize_eight, quantize_ten
 from bismuth.core import essentials
 
 __version__ = "0.0.5d"

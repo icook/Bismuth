@@ -1,9 +1,27 @@
 import select, json, platform
+from decimal import *
+
+def quantize_two(value):
+    value = Decimal(value)
+    value = value.quantize(Decimal('0.00'))
+    return value
+
+def quantize_eight(value):
+    value = Decimal(value)
+    value = value.quantize(Decimal('0.00000000'))
+    return value
+
+def quantize_ten(value):
+    value = Decimal(value)
+    value = value.quantize(Decimal('0.0000000000'))
+    return value
+
 
 # Logical timeout
 LTIMEOUT = 45
 # Fixed header length
 SLEN = 10
+
 
 def send(sdef, data, slen=SLEN):
     sdef.setblocking(1)

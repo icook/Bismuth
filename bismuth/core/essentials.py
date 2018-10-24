@@ -12,7 +12,7 @@ import json
 from simplecrypt import *
 
 from bismuth.core import essentials, db
-from bismuth.core.quantizer import *
+from bismuth.core.utils import *
 
 __version__ = "0.0.3"
 

@@ -9,7 +9,8 @@ import sqlite3
 import base64
 # modular handlers will need access to the database methods under some form, so it needs to be modular too.
 # Here, I just duplicated the minimum needed code from node, further refactoring with classes will follow.
-from bismuth.core import dbhandler, connections, peershandler, mempool as mp
+from bismuth.core import dbhandler, peershandler, mempool as mp
+from bismuth.core.utils import send, receive
 import threading
 import os, sys
 #import math
@@ -63,7 +64,7 @@ class ApiHandler:
         :return: list of mempool tx
         """
         txs = mp.MEMPOOL.fetchall(mp.SQL_SELECT_TX_TO_SEND)
-        connections.send(socket_handler, txs)
+        send(socket_handler, txs)
 
     def api_clearmempool(self, socket_handler, ledger_db, peers):
         """
@@ -74,7 +75,7 @@ class ApiHandler:
         :return: 'ok'
         """
         mp.MEMPOOL.clear()
-        connections.send(socket_handler, 'ok')        
+        send(socket_handler, 'ok')        
         
     def api_ping(self, socket_handler, ledger_db, peers):
         """
@@ -84,7 +85,7 @@ class ApiHandler:
         :param peers:
         :return: 'api_pong'
         """
-        connections.send(socket_handler, 'api_pong')
+        send(socket_handler, 'api_pong')
 
     def api_getaddressinfo(self, socket_handler, ledger_db, peers):
         """
@@ -96,13 +97,13 @@ class ApiHandler:
         """
         info = {'known': False, 'pubkey':''}
         # get the address
-        address = connections.receive(socket_handler)
+        address = receive(socket_handler)
         # print('api_getaddressinfo', address)
         try:
             # format check
             if not re.match('[abcdef0123456789]{56}', address):
                 self.app_log.info("Bad address format <{}>".format(address))
-                connections.send(socket_handler, info)
+                send(socket_handler, info)
                 return
             try:
                 dbhandler.execute_param(self.app_log, ledger_db,
@@ -122,7 +123,7 @@ class ApiHandler:
                 pass
             # returns info
             # print("info", info)
-            connections.send(socket_handler, info)
+            send(socket_handler, info)
         except Exception as e:
             pass
 
@@ -138,7 +139,7 @@ class ApiHandler:
         """
         info = []
         # get the last known block
-        since_height = connections.receive(socket_handler)
+        since_height = receive(socket_handler)
         #print('api_getblocksince', since_height)
         try:
             try:
@@ -156,7 +157,7 @@ class ApiHandler:
                 print(e)
                 raise
             # print("info", info)
-            connections.send(socket_handler, info)
+            send(socket_handler, info)
         except Exception as e:
             print(e)
             raise
@@ -173,8 +174,8 @@ class ApiHandler:
         """
         info = []
         # get the last known block
-        since_height = int(connections.receive(socket_handler))
-        where_openfield_like = connections.receive(socket_handler)+'%'
+        since_height = int(receive(socket_handler))
+        where_openfield_like = receive(socket_handler)+'%'
         #print('api_getblockswhereoflike', since_height, where_openfield_like)
         try:
             try:
@@ -193,7 +194,7 @@ class ApiHandler:
                 raise
             # Add the last fetched block so the client will be able to fetch the next block
             info.append([block_height])
-            connections.send(socket_handler, info)
+            send(socket_handler, info)
         except Exception as e:
             print(e)
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -213,8 +214,8 @@ class ApiHandler:
         """
         info = []
         # get the last known block
-        since_height = connections.receive(socket_handler)
-        where_conditions = connections.receive(socket_handler)
+        since_height = receive(socket_handler)
+        where_conditions = receive(socket_handler)
         print('api_getblocksincewhere', since_height, where_conditions)
         # TODO: feed as array to have a real control and avoid sql injection !important
         # Do *NOT* use in production until it's done.
@@ -249,7 +250,7 @@ class ApiHandler:
                 print(e)
                 raise
             # print("info", info)
-            connections.send(socket_handler, info)
+            send(socket_handler, info)
         except Exception as e:
             print(e)
             raise
@@ -267,9 +268,9 @@ class ApiHandler:
         """
         info = []
         # get the last known block
-        since_height = int(connections.receive(socket_handler))
-        min_confirmations = int(connections.receive(socket_handler))
-        address = str(connections.receive(socket_handler))
+        since_height = int(receive(socket_handler))
+        min_confirmations = int(receive(socket_handler))
+        address = str(receive(socket_handler))
         print('api_getaddresssince', since_height, min_confirmations, address)
         try:
             try:
@@ -284,7 +285,7 @@ class ApiHandler:
             except Exception as e:
                 print("Exception api_getaddresssince:".format(e))
                 raise
-            connections.send(socket_handler, {'last': block_height, 'minconf': min_confirmations, 'transactions': info})
+            send(socket_handler, {'last': block_height, 'minconf': min_confirmations, 'transactions': info})
         except Exception as e:
             print(e)
             raise       
@@ -330,15 +331,15 @@ class ApiHandler:
         balance = 0
         try:
             # get the addresses (it's a list, even if a single address)
-            addresses = connections.receive(socket_handler)
-            minconf = connections.receive(socket_handler)
+            addresses = receive(socket_handler)
+            minconf = receive(socket_handler)
             if minconf < 1:
                 minconf = 1
             # TODO: Better to use a single sql query with all addresses listed?
             for address in addresses:
                 balance += self._get_balance(ledger_db, address, minconf)
             #print('api_getbalance', addresses, minconf,':', balance)
-            connections.send(socket_handler, balance)
+            send(socket_handler, balance)
         except Exception as e:
             raise
 
@@ -375,15 +376,15 @@ class ApiHandler:
         received = 0
         try:
             # get the addresses (it's a list, even if a single address)
-            addresses = connections.receive(socket_handler)
-            minconf = connections.receive(socket_handler)
+            addresses = receive(socket_handler)
+            minconf = receive(socket_handler)
             if minconf < 1:
                 minconf = 1
             # TODO: Better to use a single sql query with all addresses listed?
             for address in addresses:
                 received += self._get_received(ledger_db, address, minconf)
             print('api_getreceived', addresses, minconf,':', received)
-            connections.send(socket_handler, received)
+            send(socket_handler, received)
         except Exception as e:
             raise
 
@@ -401,17 +402,17 @@ class ApiHandler:
         # (confirmations and tx list)
         try:
             # get the addresses (it's a list, even if a single address)
-            addresses = connections.receive(socket_handler)
-            minconf = connections.receive(socket_handler)
+            addresses = receive(socket_handler)
+            minconf = receive(socket_handler)
             if minconf < 1:
                 minconf = 1
-            include_empty = connections.receive(socket_handler)
+            include_empty = receive(socket_handler)
             for address in addresses:
                 temp = self._get_received(ledger_db, address, minconf)
                 if include_empty or temp >0:
                     received[address] = temp
             print('api_listreceived', addresses, minconf,':', received)
-            connections.send(socket_handler, received)
+            send(socket_handler, received)
         except Exception as e:
             raise
 
@@ -426,18 +427,18 @@ class ApiHandler:
         balances = {}
         try:
             # get the addresses (it's a list, even if a single address)
-            addresses = connections.receive(socket_handler)
-            minconf = connections.receive(socket_handler)
+            addresses = receive(socket_handler)
+            minconf = receive(socket_handler)
             if minconf < 1:
                 minconf = 1
-            include_empty = connections.receive(socket_handler)
+            include_empty = receive(socket_handler)
             # TODO: Better to use a single sql query with all addresses listed?
             for address in addresses:
                 temp = self._get_balance(ledger_db, address, minconf)
                 if include_empty or temp >0:
                     balances[address] = temp
             print('api_listbalance', addresses, minconf,':', balances)
-            connections.send(socket_handler, balances)
+            send(socket_handler, balances)
         except Exception as e:
             raise
 
@@ -453,16 +454,16 @@ class ApiHandler:
         transaction = {}
         try:
             # get the txid
-            transaction_id = connections.receive(socket_handler)
+            transaction_id = receive(socket_handler)
             # and format
-            format = connections.receive(socket_handler)
+            format = receive(socket_handler)
             # raw tx details
             dbhandler.execute_param(self.app_log, ledger_db,
                                     "SELECT * FROM transactions WHERE signature like ?",
                                     (transaction_id+'%',))
             raw = ledger_db.fetchone()
             if not format:
-                connections.send(socket_handler, raw)
+                send(socket_handler, raw)
                 print('api_gettransaction', format, raw)
                 return
 
@@ -491,7 +492,7 @@ class ApiHandler:
             transaction['blocktime'] = block_data[0]
             transaction['blockminer'] = block_data[1]
             print('api_gettransaction', format, transaction)
-            connections.send(socket_handler, transaction)
+            send(socket_handler, transaction)
         except Exception as e:
             raise
 
@@ -508,6 +509,6 @@ class ApiHandler:
             info = [{'id':id, 'addr':ip, 'inbound': True} for id, ip in enumerate(peers.consensus)]
             # TODO: peers will keep track of extra info, like port, last time, block_height aso.
             # TODO: add outbound connection
-            connections.send(socket_handler, info)
+            send(socket_handler, info)
         except Exception as e:
             pass
